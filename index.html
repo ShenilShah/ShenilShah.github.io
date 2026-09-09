@@ -7,7 +7,7 @@
   const assetFiles=['assets/p0.txt','assets/p1.txt','assets/p2.txt','assets/p3.txt','assets/p4.txt'];
   const publishedResponse=await fetch(CLOUD_URL+'?t='+Date.now(),{cache:'no-store'}).then(async r=>{if(!r.ok)throw new Error('Portfolio data '+r.status);return r.json()});
   if(!publishedResponse || !publishedResponse.published || !publishedResponse.data) throw new Error('Published portfolio data is unavailable');
-  const parts=await Promise.all(assetFiles.map(f=>fetch(f+'?v=100',{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(f+' '+r.status);return r.text()})));
+  const parts=await Promise.all(assetFiles.map(f=>fetch(f+'?v=101',{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(f+' '+r.status);return r.text()})));
 
   const b64=parts.join('').trim();
   const bytes=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
@@ -19,6 +19,9 @@
   const initPattern=/let saved=null;[\s\S]*?let data=migrate\(saved(?:\|\|clone\(defaults\))?\);/;
   if(!initPattern.test(html)) throw new Error('Portfolio initialization block not found');
   html=html.replace(initPattern,()=>replacement);
+
+  html=html.replace("if(push)history.replaceState(null,'','#project-detail');","if(push){try{history.replaceState(null,'','#project-detail')}catch(_){}}");
+  html=html.replace("if(push)history.replaceState(null,'','#'+name);","if(push){try{history.replaceState(null,'','#'+name)}catch(_){}}");
 
   const frame=document.getElementById('site');
   frame.addEventListener('load',()=>{document.getElementById('loading')?.remove()},{once:true});
