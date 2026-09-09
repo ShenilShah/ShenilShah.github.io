@@ -1,0 +1,37 @@
+name: Wire portfolio cloud sync
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/patch-portfolio-cloud.yml'
+      - 'cloud-sync.js'
+      - 'cloud-public.js'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wire scripts into portfolio files
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          pairs=[('EDIT-PORTFOLIO[1].html','cloud-sync.js'),('PREVIEW-PORTFOLIO[1].html','cloud-public.js')]
+          for name,script in pairs:
+              p=Path(name)
+              text=p.read_text(encoding='utf-8')
+              tag=f'<script src="./{script}"></script>'
+              if tag not in text:
+                  pos=text.rfind('</body>')
+                  if pos < 0: raise SystemExit(f'No </body> in {name}')
+                  text=text[:pos]+tag+'\n'+text[pos:]
+                  p.write_text(text,encoding='utf-8')
+          PY
+      - name: Commit patched portfolio
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add 'EDIT-PORTFOLIO[1].html' 'PREVIEW-PORTFOLIO[1].html'
+          git diff --cached --quiet || git commit -m 'Connect portfolio editor and preview to Supabase'
+          git push
